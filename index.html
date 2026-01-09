@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BareMotion – Interaktives Belastungsprofil</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121933;
+      --panel2:#0e1430;
+      --line:#26315a;
+      --text:#eaf0ff;
+      --muted:#a9b4de;
+      --accent:#f6b800; /* BareMotion Gelb */
+      --good:#2ecc71;
+      --mid:#f1c40f;
+      --bad:#e74c3c;
+      --shadow: 0 18px 44px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background: radial-gradient(1200px 700px at 20% -10%, rgba(246,184,0,.16), transparent 60%),
+                  radial-gradient(900px 600px at 90% 0%, rgba(80,120,255,.12), transparent 55%),
+                  linear-gradient(180deg, var(--bg), #070a14 85%);
+    }
+    a{color:inherit}
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 18px 48px}
+
+    /* Header */
+    .top{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:14px 16px;border:1px solid var(--line);background:rgba(18,25,51,.75);
+      border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter: blur(10px);
+    }
+    .brand{display:flex;align-items:center;gap:12px;min-width:260px}
+    .logoBadge{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(246,184,0,.25), rgba(246,184,0,.05));border:1px solid rgba(246,184,0,.45);box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.logoBadge img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
+.logoFallback{width:46px;height:46px;display:grid;place-items:center;border-radius:12px;font-weight:900;letter-spacing:.5px;color:rgba(246,184,0,.95);background:rgba(0,0,0,.18);border:1px solid rgba(246,184,0,.25)}
+    .brand .t1{font-weight:800;letter-spacing:.2px}
+    .brand .t2{font-size:12px;color:var(--muted);margin-top:2px}
+    .top .right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+
+    .btn{
+      cursor:pointer; border:1px solid var(--line); background:rgba(14,20,48,.9);
+      color:var(--text); padding:10px 12px; border-radius:12px; font-weight:650;
+      transition: transform .08s ease, background .2s ease, border-color .2s ease;
+      text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn:hover{transform:translateY(-1px);border-color:#36427a;background:rgba(18,25,51,.95)}
+    .btn.primary{background:rgba(246,184,0,.13); border-color: rgba(246,184,0,.35)}
+    .btn.danger{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.35)}
+
+    /* Intro */
+    .intro{margin:18px 2px 16px;display:grid;gap:10px}
+    .intro h1{margin:0;font-size:20px;letter-spacing:.1px}
+    .intro p{margin:0;color:var(--muted);line-height:1.45}
+
+    /* Layout */
+    .grid{display:grid;grid-template-columns: 1fr 1fr; gap:14px}
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(18,25,51,.92), rgba(11,16,32,.72));
+      border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:var(--shadow); overflow:hidden;
+    }
+    .card .hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .card .hd h2{margin:0;font-size:14px;letter-spacing:.2px}
+    .card .bd{padding:14px 16px}
+
+    /* Inputs */
+    .field{display:grid;gap:8px;margin:10px 0}
+    .labelrow{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+    .labelrow .l{font-weight:700}
+    .labelrow .v{color:var(--muted);font-variant-numeric: tabular-nums}
+    input[type=range]{width:100%}
+    select{
+      width:100%; padding:10px 12px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(11,16,32,.55);
+      color:var(--text);
+      outline:none;
+    }
+    .hint{color:var(--muted);font-size:12px;line-height:1.35}
+
+    /* Block headings */
+    .blockHd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+    .pill{
+      font-size:11px; font-weight:800; letter-spacing:.2px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      color:var(--muted);
+    }
+    .pill.good{border-color:rgba(46,204,113,.35);background:rgba(46,204,113,.10);color:#cfeee0}
+    .pill.warn{border-color:rgba(241,196,15,.35);background:rgba(241,196,15,.10);color:#f7edc3}
+
+    /* Result – clear separation for Gesamtscore */
+    .resultTop{display:grid;grid-template-columns: 320px 1fr; gap:14px; align-items:stretch;}
+    @media (max-width: 920px){ .resultTop{grid-template-columns:1fr} }
+
+    .overall{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background: linear-gradient(180deg, rgba(14,20,48,.92), rgba(18,25,51,.65));
+      padding:14px;
+    }
+    .overall .k{color:var(--muted);font-size:12px;margin-bottom:6px}
+    .overall .scoreRow{display:flex;gap:14px;align-items:center}
+    .scoreNum{font-size:34px;font-weight:900;letter-spacing:.2px;line-height:1}
+    .scoreSub{color:var(--muted);font-size:12px;margin-top:4px}
+
+    /* Ring Gauge */
+    .ring{
+      --p: 0; /* 0..100 */
+      width:130px;height:130px;border-radius:999px;
+      background: conic-gradient(var(--good) calc(var(--p)*1%), rgba(255,255,255,.10) 0);
+      display:grid;place-items:center;
+      position:relative;
+      box-shadow: 0 18px 36px rgba(0,0,0,.38);
+    }
+    .ring::before{
+      content:"";
+      width:104px;height:104px;border-radius:999px;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.10), rgba(0,0,0,.10) 55%),
+                  linear-gradient(180deg, rgba(11,16,32,.92), rgba(14,20,48,.92));
+      border:1px solid rgba(255,255,255,.09);
+      position:absolute;
+    }
+    .ring .ringTxt{position:relative;text-align:center}
+    .ring .ringTxt .big{font-weight:900;font-size:20px}
+    .ring .ringTxt .small{color:var(--muted);font-size:11px;margin-top:2px}
+
+    /* Traffic light */
+    .lightWrap{margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .lights{display:flex;gap:8px;align-items:center}
+    .lamp{width:14px;height:14px;border-radius:50%;background: rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);}
+    .lamp.on.red{background:var(--bad);border-color:rgba(231,76,60,.65)}
+    .lamp.on.yellow{background:var(--mid);border-color:rgba(241,196,15,.6)}
+    .lamp.on.green{background:var(--good);border-color:rgba(46,204,113,.55)}
+    .grade{font-weight:800}
+    .grade span{color:var(--muted);font-weight:700;font-size:12px;margin-left:8px}
+
+    /* Detail bars */
+    .bars{border:1px solid var(--line);border-radius:16px;background:rgba(14,20,48,.55);padding:14px}
+    .barRow{display:grid;gap:8px;margin:10px 0}
+    .barTop{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+    .barTop .name{font-weight:750}
+    .barTop .pct{color:var(--muted);font-variant-numeric: tabular-nums}
+    .track{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+    .fill{height:100%;width:0%;border-radius:999px;background: linear-gradient(90deg, rgba(231,76,60,.95), rgba(241,196,15,.95), rgba(46,204,113,.95));}
+
+    /* Accordion */
+    details{border:1px solid var(--line);border-radius:16px;background:rgba(14,20,48,.45);padding:10px 12px;margin-top:12px}
+    summary{cursor:pointer;font-weight:800;list-style:none}
+    summary::-webkit-details-marker{display:none}
+    details .txt{color:var(--muted);line-height:1.45;font-size:13px;margin-top:8px}
+
+    /* Advanced panel for Feinschliff */
+    .advGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+    @media (max-width: 920px){ .advGrid{grid-template-columns:1fr} }
+    .mini{border:1px solid var(--line);border-radius:14px;background:rgba(18,25,51,.55);padding:12px}
+    .mini h3{margin:0 0 8px;font-size:13px}
+    .mini .hint{margin-top:8px}
+    .row2{display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;margin:8px 0}
+    .num{width:100%;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:rgba(11,16,32,.75);color:var(--text)}
+
+    /* Footer note */
+    .note{color:var(--muted);font-size:12px;line-height:1.35;margin-top:12px}
+    .sep{height:1px;background:var(--line);margin:12px 0}
+  
+    /* Profile widgets */
+    .kv{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin:6px 0}
+    .kv .k{color:var(--muted);font-size:12px}
+    .kv .v{font-weight:850;font-variant-numeric:tabular-nums}
+    .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--muted);font-size:11px;font-weight:800}
+    .tag.good{border-color:rgba(46,204,113,.35);background:rgba(46,204,113,.10);color:#cfeee0}
+    .tag.warn{border-color:rgba(241,196,15,.35);background:rgba(241,196,15,.10);color:#f7edc3}
+    .tag.bad{border-color:rgba(231,76,60,.35);background:rgba(231,76,60,.10);color:#ffd6d1}
+
+    /* VO2 bar */
+    .vo2Wrap{margin-top:10px;border:1px solid var(--line);border-radius:14px;background:rgba(14,20,48,.50);padding:12px}
+    .vo2Top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+    .vo2Bar{position:relative;height:14px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);overflow:hidden;margin-top:10px}
+    .vo2Band{position:absolute;top:0;bottom:0;border-radius:999px;background:rgba(46,204,113,.22)}
+    .vo2Mark{position:absolute;top:-6px;bottom:-6px;width:2px;background:rgba(246,184,0,.95)}
+    .vo2Mark.actual{background:rgba(80,120,255,.95)}
+    .smallBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+  
+    /* --- Dashboard settings (v32) --- */
+    .radioRow{display:grid;gap:8px;margin:10px 0 8px}
+    .radio{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.03)}
+    .radio input{margin-top:3px}
+    .miniBox{padding:12px;border:1px dashed rgba(255,255,255,.18);border-radius:14px;background:rgba(255,255,255,.02);margin-top:10px}
+    .codeArea{width:100%;min-height:150px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.22);color:var(--text);padding:12px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;line-height:1.35}
+    .previewBox{white-space:pre-wrap;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.22);padding:12px;min-height:150px;color:var(--text);font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;line-height:1.35}
+    .switch{position:relative;display:inline-block;width:44px;height:24px}
+    .switch input{opacity:0;width:0;height:0}
+    .switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.18);transition:.2s;border-radius:999px;border:1px solid var(--line)}
+    .switch .slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:2px;background:white;transition:.2s;border-radius:50%}
+    .switch input:checked + .slider{background:rgba(246,184,0,.35)}
+    .switch input:checked + .slider:before{transform:translateX(20px)}
+    .mutedNote{color:var(--muted);font-size:12.5px;line-height:1.35;margin-top:8px}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="top">
+      <div class="brand">
+        <div class="logoBadge">
+          <img id="brandLogo" src="baremotion_logo_transparent.png" alt="BareMotion Logo" loading="eager" />
+        </div>
+        <div>
+          <div class="t1">BareMotion</div>
+          <div class="t2">GesundheitsFitness • Belastungsprofil</div>
+        </div>
+      </div>
+      <div class="right">
+        <button class="btn danger" id="btnResetTop" type="button">Alles zurücksetzen</button>
+        <a class="btn" href="tel:+436604648784">Telefonischer Erstkontakt</a>
+        <a class="btn primary" href="https://manuel-vg4cubu5.scoreapp.com" target="_blank" rel="noopener">GesundheitsFitness‑Check starten</a>
+      </div>
+    </header>
+
+    <section class="intro">
+      <h1>Interaktives Belastungsprofil</h1>
+      <p>
+        Diese Seite ist eine <strong>orientierende, nicht‑medizinische</strong> Einordnung. Die Berechnung läuft <strong>lokal im Browser</strong>.
+        Bitte keine sensiblen Gesundheitsdaten eingeben. Für eine professionelle Abklärung: Erstkontakt / Termin.
+      </p>
+    </section>
+
+    <section class="grid">
+      <!-- LEFT COLUMN: INPUTS -->
+      <!-- INPUTS: ENTASTUNG & BELASTUNG GETRENNT -->
+      <div class="card">
+        <div class="hd">
+          <h2>Entlastung</h2>
+        </div>
+        <div class="bd">
+
+          <div class="blockHd">
+            <div style="font-weight:850">Entlastung</div>
+            <div class="pill good">Stufe 1</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Schlafdauer (h/Nacht)</div><div class="v"><span id="vSleep">7.0</span> h</div></div>
+            <input id="sleep" type="range" min="4" max="9" step="0.1" value="7" />
+            <div class="hint">Zielbereich meist 7–8 h. Niedrige Werte drücken v. a. die Erholungsfähigkeit.</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Schlafqualität</div><div class="v" id="vSleepQ">Gut</div></div>
+            <select id="sleepQ">
+              <option value="poor">Schlecht</option>
+              <option value="ok">Mittel</option>
+              <option value="good" selected>Gut</option>
+              <option value="great">Sehr gut</option>
+            </select>
+            <div class="hint">Qualität wirkt wie ein Verstärker der Erholung (Stufe 1).</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Erholungsphasen ≥ 30 min täglich</div><div class="v" id="vRecPhase">Ja</div></div>
+            <select id="recPhase">
+              <option value="yes" selected>Ja</option>
+              <option value="no">Nein</option>
+            </select>
+            <div class="hint">Beispiel: Spazieren, Mobility, Atem-/Entspannungsroutine, bewusstes „Runterfahren“.</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Stress / Anspannung</div><div class="v"><span id="vStress">4</span>/10</div></div>
+            <input id="stress" type="range" min="0" max="10" step="1" value="4" />
+            <div class="hint">Subjektiv: 0 = sehr ruhig, 10 = maximaler Stress.</div>
+          </div>
+
+          </div>
+        </div>
+      </div>
+
+
+      <!-- NEW CARD: HARMONISIERUNG (Stufe 2) -->
+      <div class="card">
+        <div class="hd"><h2>Harmonisierung</h2></div>
+        <div class="bd">
+          <div class="blockHd"><div style="font-weight:850">Harmonisierung</div>
+            <div class="pill">Stufe 2</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Beweglichkeit / Mobility</div><div class="v"><span id="vHmob">2</span> Sessions/Woche</div></div>
+            <input id="hMob" type="range" min="0" max="7" step="1" value="2" />
+            <div class="hint">Stufe‑2 Fokus: Bewegungsqualität, Range of Motion, aktive Regeneration. Empfehlung: 2–4 Sessions/Woche (kurz reicht).</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Koordination / Balance</div><div class="v"><span id="vHcoo">2</span> Sessions/Woche</div></div>
+            <input id="hCoo" type="range" min="0" max="7" step="1" value="2" />
+            <div class="hint">Stufe‑2 Fokus: Kopplung, Rhythmus, Balance, Reaktions‑Basics. Empfehlung: 2–3 Sessions/Woche (sauber > schwer).</div>
+          </div>
+
+          <div class="note" style="margin-top:10px">
+            Logik‑Gedanke: Harmonisierung wirkt als Qualitäts‑Deckel. Tempo‑Reize (Schnelligkeit) sind am wertvollsten, wenn Bewegungsqualität passt.
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="hd"><h2>Belastung</h2></div>
+        <div class="bd">
+          <div class="blockHd"><div style="font-weight:850">Belastung</div>
+            <div class="pill warn">Stufe 3–5</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Moderat (Stufe 3) – Aktivitätsminuten</div><div class="v"><span id="vMod">150</span> min/Woche</div></div>
+            <input id="mod" type="range" min="0" max="300" step="10" value="150" />
+            <div class="hint">Unterer Ausdauerbereich. WHO: 150–300 min/Woche moderat.</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Intensiv (Stufe 4) – Aktivitätsminuten</div><div class="v"><span id="vInt">0</span> min/Woche</div></div>
+            <input id="int" type="range" min="0" max="150" step="10" value="0" />
+            <div class="hint">Oberer Ausdauerbereich. WHO: 75–150 min/Woche intensiv (≈ 2:1 moderat).</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Hoch‑intensiv langsam (Stufe 5) – Minuten</div><div class="v"><span id="vHi">0</span> min/Woche</div></div>
+            <input id="hi" type="range" min="0" max="150" step="10" value="0" />
+            <div class="hint">Krafttraining / Schwer (langsam, kontrolliert). Schnelligkeit/Tempo wird separat erfasst.</div>
+          </div>
+
+          <div class="field">
+            <div class="labelrow"><div class="l">Schnelligkeit (hoch‑intensiv schnell / Tempo)</div><div class="v"><span id="vSpeHi">0</span> Sessions/Woche</div></div>
+            <input id="speHi" type="range" min="0" max="7" step="1" value="0" />
+            <div class="hint">Kurze Tempo‑Reize (Sprints, Sprünge, explosive Wiederholungen). Empfehlung: 0–2 Sessions/Woche. Qualität > Menge. Tempo wird nur dann „belohnt“, wenn Harmonisierung passt.</div>
+          </div>
+
+          <div class="sep"></div>
+          <a class="btn danger" href="tel:+436604648784" style="width:100%;justify-content:center">Bei Beschwerden/Unsicherheit: Physiotherapie‑Abklärung</a>
+
+          <details>
+            <summary>Wissen & Kontext (GesundheitsFitness 1x1)</summary>
+            <div class="stageLegend" style="margin:10px 0 6px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
+              <div style="padding:6px 8px;border-radius:8px;background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.35);text-align:center;font-size:11px;font-weight:700">Stufe 1<br><span style="font-weight:500;color:var(--muted)">Entlastung</span></div>
+              <div style="padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);text-align:center;font-size:11px;font-weight:700">Stufe 2<br><span style="font-weight:500;color:var(--muted)">locker</span></div>
+              <div style="padding:6px 8px;border-radius:8px;background:rgba(241,196,15,.15);border:1px solid rgba(241,196,15,.35);text-align:center;font-size:11px;font-weight:700">Stufe 3<br><span style="font-weight:500;color:var(--muted)">moderat</span></div>
+              <div style="padding:6px 8px;border-radius:8px;background:rgba(241,196,15,.22);border:1px solid rgba(241,196,15,.45);text-align:center;font-size:11px;font-weight:700">Stufe 4<br><span style="font-weight:500;color:var(--muted)">intensiv</span></div>
+              <div style="padding:6px 8px;border-radius:8px;background:rgba(231,76,60,.18);border:1px solid rgba(231,76,60,.45);text-align:center;font-size:11px;font-weight:700">Stufe 5<br><span style="font-weight:500;color:var(--muted)">hoch‑intensiv</span></div>
+            </div>
+            <div class="txt" id="kbText">
+              <strong>GesundheitsFitness</strong> beschreibt Alltags‑ und Trainingsbelastungen mit <em>Bremskraft gegen das Altern</em>.
+              Der Bereich zwischen leichten Aktivitäten des Alltags und dem, was eine Person maximal leisten kann, wird als <strong>Leistungsreserve</strong> bezeichnet.
+              <br><br>
+              Alltagsbelastungen können den Körper stimulieren, um Leistungsfähigkeit zu <em>erhalten oder zu verbessern</em>. Eine erhöhte Leistungsfähigkeit vergrößert die Leistungsreserve.
+              Je gesundheitsförderlicher diese Alltagsbelastungen gestaltet sind, desto größer ist ihre Bremskraft auf altersbedingte Abbauprozesse.
+              <br><br>
+              <strong>Entlastung (Stufe 1)</strong> – Schlaf, Erholung und Stressregulation – ermöglicht es erst, diese Reserve im Alltag und bei Belastungsspitzen zu nutzen.
+              <br><br>
+              <strong>Belastung (Stufen 3–5)</strong> wirkt über unterschiedliche Qualitäten:
+              <ul>
+                <li><strong>Moderat / Intensiv</strong> (Stufe 3–4) – Ausdauerbelastungen im unteren und oberen Bereich (WHO‑Logik: 2:1‑Äquivalenz)</li>
+                <li><strong>Hoch‑intensiv langsam</strong> (Stufe 5) – Kraft/Schwer (kontrolliert, „langsam“), strukturelle Belastung (WHO: Kraft ≥ 2×/Woche, ~90 min)</li>
+                <li><strong>Hoch‑intensiv schnell</strong> (Stufe 5) – Tempo/Sprints/Sprünge (sehr hohe Spitzenlast, dosiert; Qualität &gt; Menge)</li>
+              </ul>
+              <br>
+              <strong>Pufferzone</strong> beschreibt die Fähigkeit, kurzfristige Belastungsspitzen ohne Überlastung zu bewältigen. Sie entsteht gleichmäßig aus Ausdauerbelastung, hoch‑intensiver Belastung und ausreichender Entlastungsfähigkeit.
+              <br><br>
+              <strong>Gewebetoleranz</strong> beschreibt die Fähigkeit, hohe Spitzenkräfte sicher zu verarbeiten (Sehnen, Muskel‑Sehnen‑Komplex, passive Strukturen). In der Demo entsteht sie primär aus <em>hoch‑intensiv langsam</em> (Basis) plus einem dosierten Anteil <em>hoch‑intensiv schnell</em> (Tempo). Standard‑Heuristik hier: <strong>2/3 langsam + 1/3 schnell</strong>.
+              <br><br>
+              GesundheitsFitness sollte immer auf eine möglichst hohe Bremskraft <em>für die jeweilige Person</em> abzielen. Dauer, Art und Qualität von Alltagsbelastungen müssen deshalb individuell gesteuert werden.
+            </div>
+          </details>
+
+          <details>
+            <summary>Erweitert (Feinschliff – später ausblendbar)</summary>
+            <div class="txt">
+              Hier kannst du Gewichtungen und Ampel‑Schwellen anpassen. Diese Sektion ist bewusst als <em>Entwicklungs‑/Feinschliff‑Modus</em> gedacht und kann später entfernt werden.
+              <div class="advGrid">
+                <div class="mini">
+                  <h3>Gewichtung Gesamtscore</h3>
+                  <div class="row2"><div>Entlastung/Erholung</div><input class="num" id="wRec" type="number" step="0.05" value="0.35"/></div>
+                  <div class="row2"><div>Leistungsreserve</div><input class="num" id="wRes" type="number" step="0.05" value="0.25"/></div>
+                  <div class="row2"><div>Pufferzone</div><input class="num" id="wBuf" type="number" step="0.05" value="0.20"/></div>
+                  <div class="row2"><div>Gewebetoleranz</div><input class="num" id="wTis" type="number" step="0.05" value="0.20"/></div>
+                  <div class="hint">Gewichte werden automatisch normiert (Summe muss nicht exakt 1.0 sein).</div>
+                </div>
+                <div class="mini">
+                  <h3>Ampel‑Schwellen</h3>
+                  <div class="row2"><div>Rot bis</div><input class="num" id="tRed" type="number" min="0" max="100" step="1" value="49"/></div>
+                  <div class="row2"><div>Gelb bis</div><input class="num" id="tYel" type="number" min="0" max="100" step="1" value="69"/></div>
+                  <div class="row2"><div>Grün ab</div><input class="num" id="tGre" type="number" min="0" max="100" step="1" value="70"/></div>
+                  <div class="hint">Empfehlung: Rot < 50, Gelb 50–69, Grün ≥ 70.</div>
+                </div>
+              </div>
+              <div class="sep"></div>
+              <div class="hint"><strong>Hinweis:</strong> In dieser Demo werden keine gesundheitsbezogenen Handlungsanweisungen ausgegeben. „Priorität“ ist nur eine Orientierung, welcher Bereich rechnerisch am meisten drückt.</div>
+            </div>
+          </details>
+
+          <div class="note">
+            DSGVO/Datenschutz: Keine Speicherung, kein Tracking, keine Übertragung. Alles läuft lokal im Browser.
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- NEW CARD: PROFIL & SCOREAPP -->
+      <div class="card">
+        <div class="hd">
+          <h2>Profil & ScoreApp (Demo)</h2>
+          <div class="hint">Daten kommen typischerweise aus der ScoreApp – hier als Demo simuliert</div>
+        </div>
+        <div class="bd">
+
+          <div class="blockHd" style="margin-top:0">
+            <div style="font-weight:850">Körperdaten</div>
+            <div class="pill">Dashboard‑Eingabe</div>
+          </div>
+
+          <div class="advGrid">
+            <div class="mini">
+              <h3>Basis</h3>
+              <div class="row2"><div>Geschlecht</div>
+                <select id="sex" class="num" style="padding:8px 10px">
+                  <option value="male" selected>Mann</option>
+                  <option value="female">Frau</option>
+                  <option value="other">Divers</option>
+                </select>
+              </div>
+              <div class="row2"><div>Alter</div><input class="num" id="age" type="number" min="10" max="90" step="1" value="37"/></div>
+              <div class="row2"><div>Größe (cm)</div><input class="num" id="height" type="number" min="120" max="220" step="1" value="172"/></div>
+              <div class="row2"><div>Gewicht (kg)</div><input class="num" id="weight" type="number" min="30" max="200" step="0.1" value="83"/></div>
+              <div class="kv"><div class="k">BMI</div><div class="v"><span id="bmiVal">–</span> <span id="bmiCat" class="tag">–</span></div></div>
+              <div class="hint">BMI ist hier nur Kontext (kein Zielwert). Optional – kann jederzeit ausgeblendet werden.</div>
+            </div>
+
+            <div class="mini">
+              <h3>VO₂max (Referenz & Bring‑Schuld)</h3>
+              <div class="row2"><div>VO₂max Messwert (optional)</div><input class="num" id="vo2Actual" type="number" min="10" max="90" step="0.1" placeholder="z.B. 45.0"/></div>
+              <div class="vo2Wrap">
+                <div class="vo2Top">
+                  <div class="hint"><strong>Schätzwert</strong>: <span id="vo2Est">–</span> ml/kg/min</div>
+                  <div class="hint"><strong>Erwartungsband</strong>: <span id="vo2BandTxt">–</span></div>
+                </div>
+                <div class="vo2Bar" id="vo2Bar">
+                  <div class="vo2Band" id="vo2Band"></div>
+                  <div class="vo2Mark" id="vo2Mark"></div>
+                  <div class="vo2Mark actual" id="vo2MarkActual" style="display:none"></div>
+                </div>
+                <div class="hint" id="vo2Hint" style="margin-top:10px">
+                  Idee: Der Schätzwert soll dich motivieren, ihn zu <strong>überprüfen</strong> – via Drittanbieter‑Daten, Annäherungstest oder sportmedizinische Testung.
+                </div>
+                <div class="smallBtns">
+                  <button class="btn" type="button" id="btnVo2Third">Drittanbieter‑Daten</button>
+                  <button class="btn" type="button" id="btnVo2Physio">Physiotec‑Annäherungstest</button>
+                  <button class="btn" type="button" id="btnVo2SM">Sportmedizinische Testung</button>
+                </div>
+              </div>
+            </div>
+
+          <div class="sep"></div>
+
+          <div class="blockHd">
+            <div style="font-weight:850">Motorische Grundeigenschaften (Baseline)</div>
+            <div class="pill warn">ScoreApp</div>
+          </div>
+
+          <div class="hint" style="margin-top:6px">
+            Startpunkt nach der ScoreApp. Ab jetzt werden Veränderungen über dein persönliches Dashboard (Tagebuch) abgebildet – nicht durch manuelles „Hochdrehen“.
+          </div>
+
+          <div class="advGrid">
+            <div class="mini">
+              <h3>Baseline (0–100)</h3>
+              <div class="kv"><div class="k">Ausdauer</div><div class="v"><span id="vSaEnd">55</span>/100</div></div>
+              <div class="kv"><div class="k">Kraft / hoch‑intensiv langsam</div><div class="v"><span id="vSaStr">40</span>/100</div></div>
+              <div class="kv"><div class="k">Beweglichkeit</div><div class="v"><span id="vSaMob">60</span>/100</div></div>
+              <div class="kv"><div class="k">Koordination</div><div class="v"><span id="vSaCoo">45</span>/100</div></div>
+              <div class="kv"><div class="k">Schnelligkeit</div><div class="v"><span id="vSaSpe">35</span>/100</div></div>
+              <div class="kv"><div class="k">Motivation / Bereitschaft</div><div class="v"><span id="vSaMot">70</span>/100</div></div>
+              <div class="kv"><div class="k">ScoreApp‑Baseline</div><div class="v"><span id="saBase">–</span>/100</div></div>
+              <div class="kv"><div class="k">ScoreApp Prioritäten (Top 3)</div><div class="v"></div></div>
+              <ol id="saPrio" style="margin:0;padding-left:18px;color:var(--muted);line-height:1.35"></ol>
+            </div>
+
+            <div class="mini">
+              <h3>Safety‑Filter</h3>
+              <div class="row2"><div>Red Flag / Abklärungs‑Trigger</div>
+                <select id="saRed" class="num" style="padding:8px 10px">
+                  <option value="no" selected>Nein</option>
+                  <option value="yes">Ja</option>
+                </select>
+              </div>
+              <div class="hint">Bei „Ja“ wird die Einordnung bewusst gedeckelt und auf medizinische/physiotherapeutische Abklärung verwiesen.</div>
+              <div class="sep" style="margin:12px 0"></div>
+              <h3>Limitation (optional)</h3>
+              <input class="num" id="saLim" type="text" placeholder="z.B. Knie rechts bei Sprüngen" value="Knie rechts bei Sprüngen"/>
+              <div class="hint">Limitation beeinflusst die Kommunikation (z. B. Tempo‑Reize vorsichtig) – in der Demo noch ohne harte Regeln.</div>
+            </div>
+          </div>
+
+          <details>
+            <summary>ScoreApp‑Baseline bearbeiten (nur Demo/Entwicklung)</summary>
+            <div class="hint" style="margin-top:6px">Diese Regler sind nur für Tests in der Demo. In der echten User‑Experience kommen die Werte ausschließlich aus der ScoreApp (JSON‑Import).</div>
+            <div class="field"><div class="labelrow"><div class="l">Ausdauer</div><div class="v">0–100</div></div><input id="saEnd" type="range" min="0" max="100" step="1" value="55" /></div>
+            <div class="field"><div class="labelrow"><div class="l">Kraft / hoch‑intensiv langsam</div><div class="v">0–100</div></div><input id="saStr" type="range" min="0" max="100" step="1" value="40" /></div>
+            <div class="field"><div class="labelrow"><div class="l">Beweglichkeit</div><div class="v">0–100</div></div><input id="saMob" type="range" min="0" max="100" step="1" value="60" /></div>
+            <div class="field"><div class="labelrow"><div class="l">Koordination</div><div class="v">0–100</div></div><input id="saCoo" type="range" min="0" max="100" step="1" value="45" /></div>
+            <div class="field"><div class="labelrow"><div class="l">Schnelligkeit</div><div class="v">0–100</div></div><input id="saSpe" type="range" min="0" max="100" step="1" value="35" /></div>
+            <div class="field"><div class="labelrow"><div class="l">Motivation / Bereitschaft</div><div class="v">0–100</div></div><input id="saMot" type="range" min="0" max="100" step="1" value="70" /></div>
+          </details>
+
+
+          <div class="sep"></div>
+
+          <button class="btn primary" id="btnLoadDemo" type="button" style="width:100%;justify-content:center">Demo‑Profil erneut laden</button>
+
+          <div class="note">
+            Hinweis: Diese Demo ist bewusst „Health‑Fitness“ orientiert (nicht medizinisch). Sie ersetzt keine Diagnostik.
+          </div>
+
+        </div>
+      </div>
+
+<!-- RIGHT COLUMN: WISSEN & ERGEBNIS -->
+      <div class="card">
+        <div class="hd"><h2>Ergebnis</h2>
+          <div class="hint">Aktualisiert live</div>
+        </div>
+        <div class="bd">
+          <div class="resultTop">
+            <div class="overall">
+              <div class="k">Gesamtscore</div>
+              <div class="scoreRow">
+                <div class="ring" id="ring" style="--p:0">
+                  <div class="ringTxt">
+                    <div class="big" id="ringVal">0</div>
+                    <div class="small">von 100</div>
+                  </div>
+                </div>
+                <div>
+                  <div class="scoreNum" id="scoreNum">0</div>
+                  <div class="scoreSub" id="scoreLabel">–</div>
+                  <div class="lightWrap">
+                    <div class="lights" aria-label="Ampel">
+                      <div class="lamp red" id="lampR"></div>
+                      <div class="lamp yellow" id="lampY"></div>
+                      <div class="lamp green" id="lampG"></div>
+                    </div>
+                    <div class="grade" id="grade">– <span id="gradeHint"></span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="sep"></div>
+              <div class="hint" id="prio">Priorität: –</div>
+              <div class="prioBox" id="prioBox" style="margin-top:8px;padding:10px 12px;border-radius:12px;border:1px solid rgba(246,184,0,.45);background:rgba(246,184,0,.12);font-weight:800;display:none"><div style="font-weight:900;margin-bottom:6px">Top‑Prioritäten</div><ol id="prioList" style="margin:0;padding-left:18px;line-height:1.35"></ol></div>
+            </div>
+
+            <div class="bars">
+              <div class="hint">Detailwerte (0–100). Diese helfen zu verstehen, <em>warum</em> der Gesamtscore so ausfällt.</div>
+
+              <div class="miniBox" style="margin-top:12px">
+                <div class="hint" style="margin-bottom:8px"><strong>Motorische Grundeigenschaften</strong> – Baseline (ScoreApp) vs. Aktuell (Dashboard)</div>
+                <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+                  <div style="flex:1 1 260px;min-width:240px">
+                    <canvas id="radar" width="360" height="270" style="width:100%;max-width:360px;aspect-ratio:4/3;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.12);border-radius:14px"></canvas>
+                    <div class="hint" style="margin-top:8px">
+                      <span class="tag">Baseline</span> ScoreApp &nbsp; <span class="tag" style="border-color:rgba(46,204,113,.55)">Aktuell</span> Dashboard
+                    </div>
+                  </div>
+                  <div style="flex:1 1 220px;min-width:200px">
+                    <div class="kv"><div class="k">Ausdauer</div><div class="v"><span id="mEnd">–</span>/100</div></div>
+                    <div class="kv"><div class="k">Kraft</div><div class="v"><span id="mStr">–</span>/100</div></div>
+                    <div class="kv"><div class="k">Beweglichkeit</div><div class="v"><span id="mMob">–</span>/100</div></div>
+                    <div class="kv"><div class="k">Koordination</div><div class="v"><span id="mCoo">–</span>/100</div></div>
+                    <div class="kv"><div class="k">Schnelligkeit</div><div class="v"><span id="mSpe">–</span>/100</div></div>
+                    <div class="hint" style="margin-top:10px">Tipp: Tempo‑Reize bringen nur dann „Gamechanger‑Effekt“, wenn Harmonisierung (Beweglichkeit/Koordination) ausreichend ist.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="barRow">
+                <div class="barTop"><div class="name">Entlastung / Erholungsfähigkeit</div><div class="pct"><span id="sRec">0</span>%</div></div>
+                <div class="track"><div class="fill" id="fRec"></div></div>
+              </div>
+
+              <div class="barRow">
+                <div class="barTop"><div class="name">Leistungsreserve</div><div class="pct"><span id="sRes">0</span>%</div></div>
+                <div class="track"><div class="fill" id="fRes"></div></div>
+              </div>
+
+              <div class="barRow">
+                <div class="barTop"><div class="name">Pufferzone</div><div class="pct"><span id="sBuf">0</span>%</div></div>
+                <div class="track"><div class="fill" id="fBuf"></div></div>
+              </div>
+
+              <div class="barRow">
+                <div class="barTop"><div class="name">Gewebetoleranz</div><div class="pct"><span id="sTis">0</span>%</div></div>
+                <div class="track"><div class="fill" id="fTis"></div></div>
+              </div>
+
+              <details>
+                <summary>Wie wird gerechnet?</summary>
+                <div class="txt" id="calcExpl">
+                  Die Logik ist absichtlich einfach gehalten (MVP): Eingaben werden auf 0–100 skaliert und anschließend gewichtet gemittelt.
+                  WHO‑Orientierung: Ausdauer moderat vs intensiv wird als <strong>2:1‑Äquivalenz</strong> (min/Woche) verstanden. Hoch‑intensiv langsam (Kraft) wird in Minuten/Woche erfasst. Harmonisierung (Beweglichkeit/Koordination) und Tempo (hoch‑intensiv schnell) werden als <strong>Sessions/Woche</strong> erfasst und intern auf 0–100 skaliert.
+                </div>
+              </details>
+            </div>
+
+          <div class="sep"></div>
+          <div class="note">
+            Nächster Schritt: kostenloser GesundheitsFitness‑Check (ScoreApp) → optionaler Zugang zu Physiotec.
+          </div>
+        </div>
+      </div>
+    
+      <!-- DASHBOARD SETTINGS: PRIORITÄTEN / REMINDER / SCOREAPP IMPORT -->
+      <div class="card" id="dashSettings">
+        <div class="hd"><h2>Dashboard‑Einstellungen</h2>
+          <div class="hint">Individualisierung (Demo)</div>
+        </div>
+        <div class="bd">
+
+          <div class="blockHd" style="margin-top:0">
+            <div style="font-weight:850">1) Prioritäten‑Modus</div>
+            <div class="pill warn">Auto vs. Manuell</div>
+          </div>
+
+          <div class="radioRow">
+            <label class="radio">
+              <input type="radio" name="prioMode" id="prioModeAuto" value="auto" checked>
+              <span><strong>Berechnungsmodus</strong> (ScoreApp + Belastungstagebuch)</span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="prioMode" id="prioModeManual" value="manual">
+              <span><strong>Eigene Top‑3</strong> (überschreibt Anzeige & Reminder)</span>
+            </label>
+          </div>
+
+          <div class="mutedNote" id="prioModeNote">Automatik nutzt ScoreApp + Tagebuch‑Einträge.</div>
+
+          <div class="miniBox" id="manualPrioBox" style="display:none">
+            <div class="row2"><div>Priorität 1</div><input class="num" id="prioM1" type="text" placeholder="z.B. Entlastung erhöhen (Stufe 1–2)"></div>
+            <div class="row2"><div>Priorität 2</div><input class="num" id="prioM2" type="text" placeholder="z.B. Ausdauerbasis stabilisieren (Stufe 3)"></div>
+            <div class="row2"><div>Priorität 3</div><input class="num" id="prioM3" type="text" placeholder="z.B. Kraft 2×/Woche (Stufe 5)"></div>
+            <div class="hint">Tipp: Kurz & konkret. Wenn du nur 1–2 Punkte einträgst, füllt die Automatik den Rest auf.</div>
+
+          <div class="sep"></div>
+
+          <div class="blockHd">
+            <div style="font-weight:850">2) Reminder & Check‑in</div>
+            <div class="pill">Demo</div>
+          </div>
+
+          <div class="row2" style="align-items:center">
+            <div>Reminder aktiv</div>
+            <label class="switch" title="Demo – keine echte Zustellung">
+              <input id="remEnable" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="advGrid" style="margin-top:10px">
+            <div class="mini">
+              <h3>Konfiguration</h3>
+              <div class="row2"><div>Frequenz</div>
+                <select id="remFreq" class="num" style="padding:8px 10px">
+                  <option value="daily" selected>Täglich</option>
+                  <option value="x3">2–3×/Woche</option>
+                  <option value="weekly">Wöchentlich</option>
+                </select>
+              </div>
+              <div class="row2"><div>Uhrzeit</div><input id="remTime" class="num" type="time" value="18:00"></div>
+              <div class="row2"><div>Kanal</div>
+                <select id="remChannel" class="num" style="padding:8px 10px">
+                  <option value="email" selected>E‑Mail</option>
+                  <option value="sms">SMS</option>
+                  <option value="whatsapp">WhatsApp (später)</option>
+                </select>
+              </div>
+              <div class="row2"><div>Inhalt</div>
+                <select id="remContent" class="num" style="padding:8px 10px">
+                  <option value="prio_only" selected>Nur Prioritäten</option>
+                  <option value="prio_values">Prioritäten + Werte‑Eingabe</option>
+                  <option value="challenge">Mini‑Challenge</option>
+                </select>
+              </div>
+              <div class="hint">Ziel: maximal simpel. Reminder fragt nur das ab, was zu deinen Top‑Prioritäten passt.</div>
+            </div>
+
+            <div class="mini">
+              <h3>Vorschau</h3>
+              <div class="previewBox" id="remPreview">Reminder ist deaktiviert. Aktiviere ihn, um eine Vorschau zu sehen.</div>
+              <div class="smallBtns" style="margin-top:10px">
+                <button class="btn" id="btnCopyRem" type="button">Text kopieren</button>
+              </div>
+              <div class="mutedNote" id="remHint">Hinweis: In einem realen Setup würdest du hier die Sende‑Logik (Brevo/SMS/WhatsApp) anbinden.</div>
+            </div>
+
+          <div class="sep"></div>
+
+          <div class="blockHd">
+            <div style="font-weight:850">3) ScoreApp‑Import (JSON)</div>
+            <div class="pill good">Copy/Paste</div>
+          </div>
+
+          <div class="hint" style="margin-top:6px">
+            Platzhalter fürs MVP: JSON aus ScoreApp (oder aus deinem Backend) einfügen → Werte werden übernommen. Format ist flexibel (Demo).
+          </div>
+
+          <textarea id="saJson" class="codeArea" placeholder='Beispiel:
+{
+  "sex": "male",
+  "age": 37,
+  "height_cm": 172,
+  "weight_kg": 83,
+  "scoreapp": { "end": 55, "str": 40, "mob": 60, "coo": 45, "spe": 35, "mot": 70, "red": "no", "lim": "Knie rechts bei Sprüngen" }
+}'></textarea>
+
+          <div class="smallBtns" style="margin-top:10px">
+            <button class="btn primary" id="btnSaJsonApply" type="button">JSON übernehmen</button>
+            <button class="btn" id="btnSaJsonExport" type="button">Aktuelle Werte als JSON</button>
+            <button class="btn" id="btnSaJsonExample" type="button">Beispiel einfügen</button>
+            <button class="btn" id="btnSaJsonCopy" type="button">JSON kopieren</button>
+          </div>
+          <div class="mutedNote" id="saJsonStatus">–</div>
+
+          <div class="note" style="margin-top:14px">
+            Datenschutz‑Hinweis: Auch diese Einstellungen laufen lokal im Browser. Keine Speicherung, keine Übertragung (Demo).
+          </div>
+
+        </div>
+      </div>
+
+
+</section>
+  </div>
+
+  <script>
+    /*****
+     * Robust wiring:
+     * - Script runs after DOMContentLoaded
+     * - All element references are guarded
+     * - No listeners attached to missing nodes
+     *****/
+
+    const COPY = {
+      labelGreen: "Grün",
+      labelYellow: "Gelb",
+      labelRed: "Rot",
+      scoreTextGreen: "Stabil / belastbar",
+      scoreTextYellow: "Aufpassen / justieren",
+      scoreTextRed: "Entlastung & Aufbau priorisieren",
+      prioPrefix: "Priorität:",
+      prioMap: {
+        rec: "Entlastung verbessern",
+        res: "Reserve aufbauen",
+        buf: "Pufferzone stabilisieren",
+        tis: "Gewebetoleranz erhöhen"
+      }
+    };
+
+    const $ = (id)=>document.getElementById(id);
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+    function round(n){ return Math.round(n); }
+
+    // --- Smooth helpers (continuous, no jumps) ---
+    function gaussian(x, mu, sigma){
+      const z = (x - mu) / (sigma || 1);
+      return Math.exp(-(z*z));
+    }
+    function smoothStep01(x){
+      // 0..1 -> 0..1 smooth
+      const t = clamp(x,0,1);
+      return t*t*(3-2*t);
+    }
+
+    // --- Entlastung (Stufe 1) mappings ---
+    function sleepScore(hours){
+      // 4..9h, best around 7.5 with gentle plateau
+      const h = clamp(hours, 4, 9);
+      const peak = 7.5;
+      const sigma = 1.35;
+      return round(100 * gaussian(h, peak, sigma));
+    }
+    function stressScore(stress){
+      const s = clamp(stress, 0, 10);
+      // linear down, mild curvature
+      return round(100 * Math.pow(1 - s/10, 0.9));
+    }
+    function sleepQualityFactor(key){
+      // acts as a gentle multiplier (not a hard cut)
+      const map = { poor: 0.80, ok: 0.90, good: 1.00, great: 1.08 };
+      return map[key] ?? 1.0;
+    }
+    function recPhaseBonus(key){
+      // small bonus for consistent recovery phases
+      return key === "yes" ? 6 : 0;
+    }
+
+    // --- Belastung (Stufen 3–5): WHO-oriented continuous scoring ---
+    function enduranceEqModerate(modMin, intMin){
+      // WHO equivalence: 1 min intensiv ~= 2 min moderat
+      const m = clamp(modMin, 0, 300);
+      const v = clamp(intMin, 0, 150);
+      return m + 2*v;
+    }
+    function enduranceScore(eqMod){
+      // eqMod (0..600). Target zone 150..300 (WHO) with plateau.
+      const x = clamp(eqMod, 0, 600);
+      // Rise towards 150, plateau 150-300, then slow decline after 450
+      const up = smoothStep01(x/150);
+      const plateau = x <= 300 ? 1 : Math.max(0.75, 1 - (x-300)/600);
+      return round(100 * up * plateau);
+    }
+    function hiScore(hiMin){
+      // high-intensity bucket: strength/sprint etc. Target around ~90 min/week (WHO strength rough).
+      const x = clamp(hiMin, 0, 150);
+      const peak = 90;
+      const sigma = 55;
+      return round(100 * gaussian(x, peak, sigma));
+    }
+    
+    function harmSessionsScore(sessionsPerWeek){
+      // Sessions/Woche -> 0..100 (simple MVP scaling).
+      // 0..4 Sessions cover the meaningful range; above that is capped.
+      const s = clamp(sessionsPerWeek, 0, 7);
+      return round(clamp((s/4)*100, 0, 100));
+    }
+
+function speedExposureScoreSessions(sessionsPerWeek, harmAvgScore){
+      // Tempo/Speed exposures are very high peak loads. Therefore the dashboard uses Sessions/Woche (not minutes).
+      // Conservative mapping: 0–2 Sessions ramp up, 2–4 plateau, >4 slight penalty (quality > quantity).
+      const s = clamp(sessionsPerWeek, 0, 7);
+      let base;
+      if(s <= 2){
+        base = clamp(60*s, 0, 100); // 1->60, 2->100
+      } else if(s <= 4){
+        base = 100;
+      } else {
+        base = 100 - (s-4)*8; // 7->76
+      }
+      // Scale by Harmonisierung to avoid rewarding speed if movement quality is low
+      const q = clamp(harmAvgScore, 0, 100);
+      const scale = 0.55 + 0.45 * (q/100);
+      return round(clamp(base * scale, 0, 100));
+    }
+
+    
+    
+    // --- BMI & VO2 helpers (Dashboard context, not medical) ---
+    function calcBMI(kg, cm){
+      const h = clamp(cm/100, 0.5, 2.5);
+      const w = clamp(kg, 1, 400);
+      return w / (h*h);
+    }
+    function bmiCategory(bmi){
+      if(!isFinite(bmi)) return {txt:"–", cls:""};
+      if(bmi < 18.5) return {txt:"Untergewicht", cls:"warn"};
+      if(bmi < 25) return {txt:"Normal", cls:"good"};
+      if(bmi < 30) return {txt:"Übergewicht", cls:"warn"};
+      if(bmi < 35) return {txt:"Adipositas I", cls:"bad"};
+      if(bmi < 40) return {txt:"Adipositas II", cls:"bad"};
+      return {txt:"Adipositas III", cls:"bad"};
+    }
+
+    // Very simple normative band (age/sex) for a motivating reference.
+    // Values are intentionally coarse to avoid over-precision in a demo.
+    function vo2ExpectedBand(sex, age){
+      const a = clamp(age, 10, 90);
+      const bands = {
+        male: [
+          {min:20,max:29, lo:38, hi:52},
+          {min:30,max:39, lo:36, hi:49},
+          {min:40,max:49, lo:34, hi:46},
+          {min:50,max:59, lo:30, hi:42},
+          {min:60,max:69, lo:26, hi:38},
+          {min:70,max:90, lo:22, hi:34},
+        ],
+        female: [
+          {min:20,max:29, lo:27, hi:41},
+          {min:30,max:39, lo:26, hi:39},
+          {min:40,max:49, lo:24, hi:36},
+          {min:50,max:59, lo:22, hi:33},
+          {min:60,max:69, lo:20, hi:30},
+          {min:70,max:90, lo:18, hi:28},
+        ],
+        other: [
+          {min:20,max:29, lo:30, hi:46},
+          {min:30,max:39, lo:29, hi:44},
+          {min:40,max:49, lo:27, hi:41},
+          {min:50,max:59, lo:24, hi:37},
+          {min:60,max:69, lo:22, hi:33},
+          {min:70,max:90, lo:20, hi:30},
+        ]
+      };
+      const arr = bands[sex] ?? bands.other;
+      const b = arr.find(x=>a>=x.min && a<=x.max) ?? arr[arr.length-1];
+      return {lo:b.lo, hi:b.hi};
+    }
+
+    function scaleToPct(x, minX, maxX){
+      const pct = (x - minX) / (maxX - minX);
+      return clamp(pct, 0, 1) * 100;
+    }
+
+    // --- ScoreApp snapshot logic (0-100) ---
+    function scoreAppBaseline(sa){
+      // motor base: average of 5 motor properties, motivation as modifier
+      const motorAvg = (sa.end + sa.str + sa.mob + sa.coo + sa.spe) / 5;
+      const base = 0.85*motorAvg + 0.15*sa.mot;
+      // small penalty if a limitation is declared (signals "bremse" in the system)
+      const limPenalty = (sa.lim && sa.lim.trim().length > 0) ? 4 : 0;
+      return round(clamp(base - limPenalty, 0, 100));
+    }
+
+    function scoreAppPriorities(sa){
+      // pick 3 lowest motor attributes (ignore motivation)
+      const map = [
+        ["Ausdauer", sa.end, "Ausdauerbasis (Stufe 3) aufbauen"],
+        ["Kraft", sa.str, "Kraft/Gewebetoleranz (Stufe 5) 2×/Woche"],
+        ["Beweglichkeit", sa.mob, "Aktive Regeneration/Mobility (Stufe 2)"]
+        ,
+        ["Koordination", sa.coo, "Koordination/Balance (Challenges)"],
+        ["Schnelligkeit", sa.spe, "Schnelligkeit/Explosivität (dosiert)"]
+      ];
+      map.sort((a,b)=>a[1]-b[1]);
+      return map.slice(0,3).map(x=>({label:x[0], score:x[1], text:x[2]}));
+    }
+
+    function mergeTopPriorities(domainPrioText, saPrios, recLow){
+      const out = [];
+      const push = (t)=>{ if(t && !out.includes(t)) out.push(t); };
+      // 1) If recovery is low, force it early
+      if(recLow) push("Erholung (Stufe 1) verbessern");
+      push(domainPrioText);
+      saPrios.forEach(p=>push(p.text));
+      return out.slice(0,3);
+    }
+
+// --- Core computation ---
+    function computeScores(input){
+      // Entlastung composite (Stufe 1)
+      const qF = sleepQualityFactor(input.sleepQ);
+      const recRaw = 0.6*sleepScore(input.sleep) + 0.4*stressScore(input.stress);
+      const rec = round(clamp(recRaw*qF + recPhaseBonus(input.recPhase), 0, 100));
+
+      // Belastung composites (WHO-orientiert)
+      const eqMod = enduranceEqModerate(input.mod, input.int); // 2:1 Regel
+      const endu = enduranceScore(eqMod);
+      const hiSlow = hiScore(input.hi); // hoch-intensiv langsam (Kraft/Schwer)
+
+      // Harmonisierung (Stufe 2)
+      const hMobSes = clamp(input.hMob, 0, 7);
+      const hCooSes = clamp(input.hCoo, 0, 7);
+      const hMob = harmSessionsScore(hMobSes);
+      const hCoo = harmSessionsScore(hCooSes);
+      const harmAvg = (hMob + hCoo) / 2;
+
+      // Schnelligkeit (hoch‑intensiv schnell / Tempo) – Sessions/Woche
+      const speFast = speedExposureScoreSessions(input.speHi, harmAvg);
+
+      // 1) Leistungsreserve
+      // Primär Ausdauer + Kraft, mit kleinem Anteil Bewegungsqualität
+      const res = round(clamp(0.45*endu + 0.45*hiSlow + 0.10*harmAvg, 0, 100));
+
+      // 2) Pufferzone
+      // Recovery + Ausdauer + Kraft + Harmonisierung
+      const buf = round(clamp(0.30*rec + 0.25*endu + 0.25*hiSlow + 0.20*harmAvg, 0, 100));
+
+      // 3) Gewebetoleranz
+      // Default-Heuristik: 2/3 hoch-intensiv langsam + 1/3 hoch-intensiv schnell (Tempo)
+      let tis = (2/3)*hiSlow + (1/3)*speFast;
+      // Safety: bei sehr niedriger Recovery wird Tempo nicht "belohnt"
+      if(rec < 40) tis *= 0.80;
+      tis = round(clamp(tis, 0, 100));
+
+      return {rec,res,buf,tis, endu, hiSlow, speFast, hMob, hCoo, harmAvg};
+    }
+
+    function getWeights(el){
+      const w = {
+        rec: Number(el.wRec?.value ?? 0.35),
+        res: Number(el.wRes?.value ?? 0.25),
+        buf: Number(el.wBuf?.value ?? 0.20),
+        tis: Number(el.wTis?.value ?? 0.20)
+      };
+      const sum = (w.rec+w.res+w.buf+w.tis) || 1;
+      return { rec:w.rec/sum, res:w.res/sum, buf:w.buf/sum, tis:w.tis/sum };
+    }
+
+    function calcTotal(domain, el){
+      const w = getWeights(el);
+      const total = domain.rec*w.rec + domain.res*w.res + domain.buf*w.buf + domain.tis*w.tis;
+      return round(total);
+    }
+
+    function gradeFromTotal(total, el){
+      const red = Number(el.tRed?.value ?? 49);
+      const yel = Number(el.tYel?.value ?? 69);
+      const gre = Number(el.tGre?.value ?? 70);
+      if(total <= red) return {key:"red", label:COPY.labelRed, text:COPY.scoreTextRed};
+      if(total <= yel) return {key:"yellow", label:COPY.labelYellow, text:COPY.scoreTextYellow};
+      if(total >= gre) return {key:"green", label:COPY.labelGreen, text:COPY.scoreTextGreen};
+      return {key:"yellow", label:COPY.labelYellow, text:COPY.scoreTextYellow};
+    }
+
+    function setBar(fillEl, val){
+      if(!fillEl) return;
+      fillEl.style.width = clamp(val,0,100) + "%";
+    }
+
+    function pickPriority(domain){
+      const entries = Object.entries(domain);
+      entries.sort((a,b)=>a[1]-b[1]);
+      const key = entries[0]?.[0] ?? "rec";
+      return { key, text: COPY.prioMap[key] || "–" };
+    }
+
+
+
+    function drawRadarChart(canvas, labels, baseVals, curVals){
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if(!ctx) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+
+      const cx = w*0.50;
+      const cy = h*0.55;
+      const r  = Math.min(w,h)*0.35;
+      const N = labels.length;
+      const start = -Math.PI/2; // Ausdauer oben
+
+      // grid
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,.12)';
+      for(const lvl of [0.2,0.4,0.6,0.8,1.0]){
+        ctx.beginPath();
+        for(let i=0;i<N;i++){
+          const a = start + i*(2*Math.PI/N);
+          const x = cx + r*lvl*Math.cos(a);
+          const y = cy + r*lvl*Math.sin(a);
+          if(i===0) ctx.moveTo(x,y);
+          else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // axes + labels
+      ctx.fillStyle = 'rgba(169,180,222,.95)';
+      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      for(let i=0;i<N;i++){
+        const a = start + i*(2*Math.PI/N);
+        const x = cx + r*Math.cos(a);
+        const y = cy + r*Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.lineTo(x,y);
+        ctx.stroke();
+
+        // label positions
+        const lx = cx + (r+16)*Math.cos(a);
+        const ly = cy + (r+16)*Math.sin(a);
+        const txt = labels[i];
+        const wTxt = ctx.measureText(txt).width;
+        let dx = lx;
+        let dy = ly;
+        // basic alignment tweaks
+        if(Math.cos(a) < -0.3) dx -= wTxt;
+        if(Math.abs(Math.sin(a)) < 0.25) dy += 4;
+        if(Math.sin(a) > 0.3) dy += 12;
+        ctx.fillText(txt, dx, dy);
+      }
+
+      def_poly(baseVals, 'rgba(255,255,255,.18)', 'rgba(255,255,255,.45)');
+      def_poly(curVals,  'rgba(46,204,113,.18)', 'rgba(46,204,113,.85)');
+
+      function def_poly(vals, fill, stroke){
+        const v = (vals||[]).map(x=>clamp(Number(x)||0, 0, 100));
+        ctx.beginPath();
+        for(let i=0;i<N;i++){
+          const a = start + i*(2*Math.PI/N);
+          const rr = r*(v[i]/100);
+          const x = cx + rr*Math.cos(a);
+          const y = cy + rr*Math.sin(a);
+          if(i===0) ctx.moveTo(x,y);
+          else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    // --- Lightweight self-tests (run on load in console) ---
+    function runSelfTests(){
+      const t = (name, cond)=>{ if(!cond){ console.warn("Test failed:", name); } };
+      const s1 = computeScores({sleep:7.5, stress:2, sleepQ:"good", recPhase:"yes", mod:150, int:0, hi:90, speHi:1, hMob:2, hCoo:2});
+      t("scores in range", Object.values(s1).every(v=>v>=0 && v<=100));
+      const s2 = computeScores({sleep:5.0, stress:9, sleepQ:"poor", recPhase:"no", mod:0, int:0, hi:0, speHi:0, hMob:0, hCoo:0});
+      t("worse recovery lowers rec", s2.rec < s1.rec);
+      const s3 = computeScores({sleep:7.5, stress:2, sleepQ:"good", recPhase:"yes", mod:0, int:75, hi:0, speHi:1, hMob:2, hCoo:2});
+      const s4 = computeScores({sleep:7.5, stress:2, sleepQ:"good", recPhase:"yes", mod:150, int:0, hi:0, speHi:1, hMob:2, hCoo:2});
+      t("WHO 2:1 equivalence roughly similar endurance", Math.abs(s3.res - s4.res) <= 18);
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      // Elements
+      const el = {
+        sleep: $("sleep"), stress: $("stress"),
+        sleepQ: $("sleepQ"), recPhase: $("recPhase"),
+        mod: $("mod"), int: $("int"), hi: $("hi"), speHi: $("speHi"),
+        hMob: $("hMob"), hCoo: $("hCoo"),
+        vSleep: $("vSleep"), vStress: $("vStress"),
+        vSleepQ: $("vSleepQ"), vRecPhase: $("vRecPhase"),
+        vMod: $("vMod"), vInt: $("vInt"), vHi: $("vHi"), vSpeHi: $("vSpeHi"),
+        vHmob: $("vHmob"), vHcoo: $("vHcoo"),
+
+        scoreNum: $("scoreNum"), scoreLabel: $("scoreLabel"), ring: $("ring"), ringVal: $("ringVal"),
+        lampR: $("lampR"), lampY: $("lampY"), lampG: $("lampG"), grade: $("grade"), gradeHint: $("gradeHint"),
+        prio: $("prio"),
+        sRec: $("sRec"), sRes: $("sRes"), sBuf: $("sBuf"), sTis: $("sTis"),
+        fRec: $("fRec"), fRes: $("fRes"), fBuf: $("fBuf"), fTis: $("fTis"),
+        wRec: $("wRec"), wRes: $("wRes"), wBuf: $("wBuf"), wTis: $("wTis"),
+        tRed: $("tRed"), tYel: $("tYel"), tGre: $("tGre"),
+        
+        sex: $("sex"), age: $("age"), height: $("height"), weight: $("weight"),
+        bmiVal: $("bmiVal"), bmiCat: $("bmiCat"),
+        vo2Actual: $("vo2Actual"), vo2Est: $("vo2Est"), vo2BandTxt: $("vo2BandTxt"),
+        vo2Bar: $("vo2Bar"), vo2Band: $("vo2Band"), vo2Mark: $("vo2Mark"), vo2MarkActual: $("vo2MarkActual"),
+        btnVo2Third: $("btnVo2Third"), btnVo2Physio: $("btnVo2Physio"), btnVo2SM: $("btnVo2SM"),
+
+        radar: $("radar"), mEnd: $("mEnd"), mStr: $("mStr"), mMob: $("mMob"), mCoo: $("mCoo"), mSpe: $("mSpe"),
+
+        saEnd: $("saEnd"), saStr: $("saStr"), saMob: $("saMob"), saCoo: $("saCoo"), saSpe: $("saSpe"), saMot: $("saMot"),
+        vSaEnd: $("vSaEnd"), vSaStr: $("vSaStr"), vSaMob: $("vSaMob"), vSaCoo: $("vSaCoo"), vSaSpe: $("vSaSpe"), vSaMot: $("vSaMot"),
+        saRed: $("saRed"), saLim: $("saLim"), saBase: $("saBase"), saPrio: $("saPrio"),
+
+        // Dashboard settings
+        prioModeAuto: $("prioModeAuto"), prioModeManual: $("prioModeManual"), prioModeNote: $("prioModeNote"),
+        manualPrioBox: $("manualPrioBox"), prioM1: $("prioM1"), prioM2: $("prioM2"), prioM3: $("prioM3"),
+        remEnable: $("remEnable"), remFreq: $("remFreq"), remTime: $("remTime"), remPreview: $("remPreview"), btnRemTest: $("btnRemTest"),
+        saJson: $("saJson"), btnSaExample: $("btnSaExample"), btnSaApply: $("btnSaApply"), saJsonStatus: $("saJsonStatus"), btnExportJson: $("btnExportJson"),
+        btnLoadDemo: $("btnLoadDemo"),
+        btnResetTop: $("btnResetTop"),
+        brandLogo: $("brandLogo")
+      };
+
+      
+      // --- Dashboard settings helpers (v32) ---
+      function getPrioMode(){
+        if(el.prioModeManual && el.prioModeManual.checked) return "manual";
+        return "auto";
+      }
+      function getManualPriorities(){
+        const vals = [el.prioM1, el.prioM2, el.prioM3].map(n=>n ? (n.value||"").trim() : "").filter(Boolean);
+        return vals.slice(0,3);
+      }
+      function renderManualBox(saRed){
+        if(!el.manualPrioBox) return;
+        const mode = getPrioMode();
+        if(saRed === "yes"){
+          el.manualPrioBox.style.display = "none";
+          if(el.prioModeNote) el.prioModeNote.textContent = "Bei Red‑Flag wird die Prioritätenanzeige aus Sicherheitsgründen fix vorgegeben.";
+          return;
+        }
+        el.manualPrioBox.style.display = (mode === "manual") ? "block" : "none";
+        if(el.prioModeNote) el.prioModeNote.textContent =
+          (mode === "manual")
+            ? "Manuelle Prioritäten übersteuern Anzeige & Reminder. Safety‑Deckelung bleibt unverändert."
+            : "Automatik nutzt ScoreApp + Tagebuch‑Einträge.";
+      }
+      function suggestMetrics(primaryPrio){
+        const t = (primaryPrio||"").toLowerCase();
+        if(t.includes("entlast") || t.includes("regener") || t.includes("schlaf")){
+          return ["Schlafdauer (h)", "Stress (0–10)", "Erholungsphase (Ja/Nein)"];
+        }
+        if(t.includes("ausdauer") || t.includes("reserve") || t.includes("puffer")){
+          return ["Moderate Minuten (Stufe 3)", "Intensive Minuten (Stufe 4)", "RPE/Belastung (1–10)"];
+        }
+        if(t.includes("kraft") || t.includes("gewebe") || t.includes("toleranz")){
+          return ["HI langsam (Stufe 5) min/Woche", "Tempo (Stufe 5 schnell) Sessions/Woche", "Harmonisierung (Mobility/Koordination) Sessions/Woche"];
+        }
+        if(t.includes("koord") || t.includes("balance") || t.includes("stabil")){
+          return ["Koordination Sessions/Woche", "Beweglichkeit Sessions/Woche", "Tempo (Stufe 5 schnell) Sessions/Woche"];
+        }
+        if(t.includes("schnell")){
+          return ["Tempo (Stufe 5 schnell) Sessions/Woche", "Koordination Sessions/Woche", "Beweglichkeit Sessions/Woche"];
+        }
+        return ["Moderate Minuten (Stufe 3)", "Stress (0–10)", "Schlafdauer (h)"];
+      }
+      function buildReminderText(top3){
+        if(!el.remPreview) return;
+        const enabled = !!(el.remEnable && el.remEnable.checked);
+        if(!enabled){
+          el.remPreview.textContent = "Reminder ist deaktiviert. Aktiviere ihn, um eine Vorschau zu sehen.";
+          if(el.remHint) el.remHint.textContent = "Hinweis: In einem realen Setup würdest du hier die Sende‑Logik (Brevo/SMS/WhatsApp) anbinden.";
+          return;
+        }
+        const freq = el.remFreq ? el.remFreq.value : "daily";
+        const time = el.remTime ? el.remTime.value : "18:00";
+        const channel = el.remChannel ? el.remChannel.value : "email";
+        const content = el.remContent ? el.remContent.value : "prio_only";
+
+        const freqTxt = (freq==="daily") ? "Täglicher Check‑in" : (freq==="x3" ? "2–3×/Woche Check‑in" : "Wöchentlicher Review");
+        const channelTxt = (channel==="email") ? "E‑Mail" : (channel==="sms" ? "SMS" : "WhatsApp (später)");
+
+        const lines = [];
+        lines.push(`BareMotion – ${freqTxt} (${channelTxt})`);
+        lines.push(`Zeitfenster: ${time}`);
+        lines.push("");
+        lines.push("Deine Top‑Prioritäten:");
+        (top3||[]).slice(0,3).forEach((t,i)=>lines.push(`${i+1}) ${t}`));
+
+        if(content === "prio_only"){
+          lines.push("");
+          lines.push("Fokus heute: Setze Priorität 1 um. Kurz reicht.");
+        } else if(content === "prio_values"){
+          const metrics = suggestMetrics((top3||[])[0]);
+          lines.push("");
+          lines.push("Bitte trage kurz diese Werte ein:");
+          metrics.forEach(m=>lines.push(`- ${m}`));
+          lines.push("");
+          lines.push("Dashboard öffnen: (Link im Live‑System)");
+        } else { // challenge
+          const primary = (top3||[])[0] || "";
+          const metrics = suggestMetrics(primary);
+          lines.push("");
+          lines.push("Mini‑Challenge (10–15 min):");
+          if(metrics[0].toLowerCase().includes("schlaf") || primary.toLowerCase().includes("entlast") || primary.toLowerCase().includes("regener")){
+            lines.push("- 10 min aktive Regeneration (Mobility/Spaziergang) + 2 min Atmung");
+          } else if(metrics[0].toLowerCase().includes("moderate") || primary.toLowerCase().includes("ausdauer")){
+            lines.push("- 20–30 min Stufe‑3 (locker‑moderat) + 5 min Mobility");
+          } else if(metrics[0].toLowerCase().includes("kraft")){
+            lines.push("- 2 Grundübungen (2×8–12) + 5 min Mobility");
+          } else if(metrics[0].toLowerCase().includes("koord") || primary.toLowerCase().includes("balance")){
+            lines.push("- 8–10 min Balance/Koordination (einfach, sauber) + 5 min Mobility");
+          } else {
+            lines.push("- 15 min Stufe‑2 (aktive Regeneration)");
+          }
+          lines.push("");
+          lines.push("Nachher kurz eintragen: RPE/Belastung (1–10).");
+        }
+
+        el.remPreview.textContent = lines.join("\\n");
+        if(el.remHint) el.remHint.textContent = "Demo: Text wird lokal generiert. In der Umsetzung würdest du hier die Sende‑Logik (Brevo/SMS/WhatsApp) anbinden.";
+      }
+
+      function copyText(text){
+        const t = String(text||"");
+        if(!t) return;
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(t).catch(()=>{});
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = t;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          try{ document.execCommand('copy'); }catch(e){}
+          document.body.removeChild(ta);
+        }
+      }
+
+      function normalizeScoreAppJson(obj){
+        const root = (obj && typeof obj === "object" && obj.scoreapp && typeof obj.scoreapp === "object") ? obj.scoreapp : obj;
+        const out = { profile:{}, sa:{} };
+
+        // Profile keys (allow multiple aliases)
+        out.profile.sex = obj?.sex ?? obj?.gender ?? root?.sex ?? root?.gender;
+        out.profile.age = obj?.age ?? root?.age;
+        out.profile.height = obj?.height_cm ?? obj?.height ?? root?.height_cm ?? root?.height;
+        out.profile.weight = obj?.weight_kg ?? obj?.weight ?? root?.weight_kg ?? root?.weight;
+
+        // ScoreApp aliases
+        const pick = (...keys)=>{
+          for(const k of keys){
+            const v = root?.[k] ?? obj?.[k];
+            if(v !== undefined && v !== null && v !== "") return v;
+          }
+          return undefined;
+        };
+
+        out.sa.end = pick("end","endurance","ausdauer","saEnd");
+        out.sa.str = pick("str","strength","kraft","saStr");
+        out.sa.mob = pick("mob","mobility","beweglichkeit","saMob");
+        out.sa.coo = pick("coo","coordination","koordination","saCoo");
+        out.sa.spe = pick("spe","speed","schnelligkeit","saSpe");
+        out.sa.mot = pick("mot","motivation","saMot");
+        out.sa.red = pick("red","redflag","saRed");
+        out.sa.lim = pick("lim","limitation","saLim");
+
+        return out;
+      }
+
+      function applyScoreAppJsonToInputs(obj){
+        const n = normalizeScoreAppJson(obj);
+
+        // profile
+        if(n.profile.sex && el.sex) el.sex.value = String(n.profile.sex);
+        if(n.profile.age !== undefined && el.age) el.age.value = clamp(Number(n.profile.age), 10, 90);
+        if(n.profile.height !== undefined && el.height) el.height.value = clamp(Number(n.profile.height), 120, 220);
+        if(n.profile.weight !== undefined && el.weight) el.weight.value = clamp(Number(n.profile.weight), 30, 200);
+
+        // scoreapp sliders
+        const setRange = (node, val)=>{
+          if(!node || val === undefined) return;
+          const num = Number(val);
+          if(Number.isFinite(num)) node.value = clamp(num, 0, 100);
+        };
+        setRange(el.saEnd, n.sa.end);
+        setRange(el.saStr, n.sa.str);
+        setRange(el.saMob, n.sa.mob);
+        setRange(el.saCoo, n.sa.coo);
+        setRange(el.saSpe, n.sa.spe);
+        setRange(el.saMot, n.sa.mot);
+
+        if(el.saRed && n.sa.red !== undefined){
+          const v = String(n.sa.red).toLowerCase();
+          el.saRed.value = (v==="yes"||v==="ja"||v==="true"||v==="1") ? "yes" : "no";
+        }
+        if(el.saLim && n.sa.lim !== undefined){
+          el.saLim.value = String(n.sa.lim);
+        }
+      }
+
+      function parseAndApplyScoreAppJson(){
+        if(!el.saJson) return;
+        const txt = (el.saJson.value||"").trim();
+        if(el.saJsonStatus) el.saJsonStatus.textContent = txt ? "…" : "Bitte JSON einfügen oder Beispiel verwenden.";
+        if(!txt) return;
+        try{
+          const obj = JSON.parse(txt);
+          applyScoreAppJsonToInputs(obj);
+          if(el.saJsonStatus) el.saJsonStatus.textContent = "JSON übernommen. (Werte wurden in die Demo übertragen.)";
+          updateUI();
+        }catch(e){
+          if(el.saJsonStatus) el.saJsonStatus.textContent = "JSON nicht lesbar: " + (e?.message || "Parse‑Fehler");
+        }
+      }
+
+      function exportCurrentValuesAsJson(){
+        const obj = {
+          sex: el.sex ? el.sex.value : "male",
+          age: el.age ? Number(el.age.value) : null,
+          height_cm: el.height ? Number(el.height.value) : null,
+          weight_kg: el.weight ? Number(el.weight.value) : null,
+          scoreapp: {
+            end: el.saEnd ? Number(el.saEnd.value) : null,
+            str: el.saStr ? Number(el.saStr.value) : null,
+            mob: el.saMob ? Number(el.saMob.value) : null,
+            coo: el.saCoo ? Number(el.saCoo.value) : null,
+            spe: el.saSpe ? Number(el.saSpe.value) : null,
+            mot: el.saMot ? Number(el.saMot.value) : null,
+            red: el.saRed ? el.saRed.value : "no",
+            lim: el.saLim ? el.saLim.value : ""
+          },
+          priorities_manual: getManualPriorities()
+        };
+        if(el.saJson) el.saJson.value = JSON.stringify(obj, null, 2);
+        if(el.saJsonStatus) el.saJsonStatus.textContent = "Aktuelle Werte als JSON erzeugt.";
+      }
+
+      function insertJsonExample(){
+        const ex = {
+          sex: "male",
+          age: 37,
+          height_cm: 172,
+          weight_kg: 83,
+          scoreapp: { end: 55, str: 40, mob: 60, coo: 45, spe: 35, mot: 70, red: "no", lim: "Knie rechts bei Sprüngen" }
+        };
+        if(el.saJson) el.saJson.value = JSON.stringify(ex, null, 2);
+        if(el.saJsonStatus) el.saJsonStatus.textContent = "Beispiel eingefügt – jetzt optional anpassen und übernehmen.";
+      }
+
+
+      function updateUI(){
+        // guard: required nodes
+        if(!el.sleep || !el.stress || !el.mod || !el.int || !el.hi || !el.speHi || !el.hMob || !el.hCoo) return;
+
+        const input = {
+          sleep: Number(el.sleep.value),
+          stress: Number(el.stress.value),
+          sleepQ: String(el.sleepQ?.value ?? "good"),
+          recPhase: String(el.recPhase?.value ?? "yes"),
+          mod: Number(el.mod.value),
+          int: Number(el.int.value),
+          hi: Number(el.hi.value),
+          speHi: Number(el.speHi.value),
+          hMob: Number(el.hMob.value),
+          hCoo: Number(el.hCoo.value)
+        };
+
+        const profile = {
+          sex: String(el.sex?.value ?? "male"),
+          age: Number(el.age?.value ?? 35),
+          height: Number(el.height?.value ?? 170),
+          weight: Number(el.weight?.value ?? 75),
+          vo2Actual: Number(el.vo2Actual?.value ?? NaN)
+        };
+
+        const sa = {
+          end: Number(el.saEnd?.value ?? 50),
+          str: Number(el.saStr?.value ?? 50),
+          mob: Number(el.saMob?.value ?? 50),
+          coo: Number(el.saCoo?.value ?? 50),
+          spe: Number(el.saSpe?.value ?? 50),
+          mot: Number(el.saMot?.value ?? 50),
+          red: String(el.saRed?.value ?? "no"),
+          lim: String(el.saLim?.value ?? "")
+        };
+
+
+        // values
+        if(el.vSleep) el.vSleep.textContent = input.sleep.toFixed(1);
+        if(el.vStress) el.vStress.textContent = String(input.stress);
+        if(el.vSleepQ) el.vSleepQ.textContent = el.sleepQ?.selectedOptions?.[0]?.textContent ?? "–";
+        if(el.vRecPhase) el.vRecPhase.textContent = el.recPhase?.selectedOptions?.[0]?.textContent ?? "–";
+        if(el.vMod) el.vMod.textContent = String(input.mod);
+        if(el.vInt) el.vInt.textContent = String(input.int);
+        if(el.vHi) el.vHi.textContent = String(input.hi);
+        if(el.vSpeHi) el.vSpeHi.textContent = String(input.speHi);
+        if(el.vHmob) el.vHmob.textContent = String(input.hMob);
+        if(el.vHcoo) el.vHcoo.textContent = String(input.hCoo);
+
+
+        // ScoreApp slider values
+        if(el.vSaEnd) el.vSaEnd.textContent = String(sa.end);
+        if(el.vSaStr) el.vSaStr.textContent = String(sa.str);
+        if(el.vSaMob) el.vSaMob.textContent = String(sa.mob);
+        if(el.vSaCoo) el.vSaCoo.textContent = String(sa.coo);
+        if(el.vSaSpe) el.vSaSpe.textContent = String(sa.spe);
+        if(el.vSaMot) el.vSaMot.textContent = String(sa.mot);
+
+        // BMI
+        const bmi = calcBMI(profile.weight, profile.height);
+        const bmiC = bmiCategory(bmi);
+        if(el.bmiVal) el.bmiVal.textContent = isFinite(bmi) ? bmi.toFixed(1) : "–";
+        if(el.bmiCat){
+          el.bmiCat.textContent = bmiC.txt;
+          el.bmiCat.className = "tag " + (bmiC.cls || "");
+        }
+
+        // VO2 band & estimate
+        const band = vo2ExpectedBand(profile.sex, profile.age);
+        const vo2EstVal = band.lo + (sa.end/100) * (band.hi - band.lo);
+        if(el.vo2Est) el.vo2Est.textContent = isFinite(vo2EstVal) ? vo2EstVal.toFixed(1) : "–";
+        if(el.vo2BandTxt) el.vo2BandTxt.textContent = `${band.lo.toFixed(0)}–${band.hi.toFixed(0)}`;
+
+        // bar scale (global)
+        const GMIN = 15, GMAX = 70;
+        const bandL = scaleToPct(band.lo, GMIN, GMAX);
+        const bandW = scaleToPct(band.hi, GMIN, GMAX) - bandL;
+        if(el.vo2Band){
+          el.vo2Band.style.left = bandL + "%";
+          el.vo2Band.style.width = clamp(bandW,0,100) + "%";
+        }
+        if(el.vo2Mark){
+          const m = scaleToPct(vo2EstVal, GMIN, GMAX);
+          el.vo2Mark.style.left = m + "%";
+        }
+        // actual marker
+        if(el.vo2MarkActual){
+          if(isFinite(profile.vo2Actual)){
+            el.vo2MarkActual.style.display = "block";
+            el.vo2MarkActual.style.left = scaleToPct(profile.vo2Actual, GMIN, GMAX) + "%";
+          } else {
+            el.vo2MarkActual.style.display = "none";
+          }
+        }
+
+
+        
+        const domain = computeScores(input);
+
+        // Motorische Grundeigenschaften: Baseline (ScoreApp) vs Aktuell (Dashboard)
+        const motorLabels = ["Ausdauer", "Kraft", "Schnelligkeit", "Beweglichkeit", "Koordination"];
+        const motorBase = [sa.end, sa.str, sa.spe, sa.mob, sa.coo];
+        const motorCur  = [domain.endu, domain.hiSlow, domain.speFast, domain.hMob, domain.hCoo];
+        drawRadarChart(el.radar, motorLabels, motorBase, motorCur);
+        if(el.mEnd) el.mEnd.textContent = String(round(domain.endu));
+        if(el.mStr) el.mStr.textContent = String(round(domain.hiSlow));
+        if(el.mSpe) el.mSpe.textContent = String(round(domain.speFast));
+        if(el.mMob) el.mMob.textContent = String(round(domain.hMob));
+        if(el.mCoo) el.mCoo.textContent = String(round(domain.hCoo));
+
+
+        // Diary-driven score (Belastungsprofil / Alltag)
+        const diaryTotal = calcTotal(domain, el);
+
+        // ScoreApp-driven baseline
+        const saBaseVal = scoreAppBaseline(sa);
+        if(el.saBase) el.saBase.textContent = String(saBaseVal);
+
+        // ScoreApp priorities
+        const saPrios = scoreAppPriorities(sa);
+        if(el.saPrio){
+          el.saPrio.innerHTML = saPrios.map(p=>`<li>${p.text} <span style="color:var(--muted);font-weight:700">(${p.score}/100)</span></li>`).join("");
+        }
+
+        // Final total: Dashboard‑Score (nach ScoreApp)
+        let total = diaryTotal;
+
+        // Safety cap
+        if(sa.red === "yes"){
+          total = Math.min(total, 40);
+        }
+
+        const g = gradeFromTotal(total, el);
+        const pr = pickPriority(domain);
+
+        // Merge Top-3 priorities (Domain + ScoreApp)
+        const recLow = domain.rec < 55;
+        const top3Auto = (sa.red === "yes")
+          ? ["Medizinische/physiotherapeutische Abklärung", "Belastung reduzieren (Stufe 4–5)", "Entlastung erhöhen (Stufe 1–2)"]
+          : mergeTopPriorities(pr.text, saPrios, recLow);
+
+        // Prioritäten‑Modus: Auto vs. Manuell (Anzeige/Reminder)
+        let top3 = top3Auto.slice();
+        if(sa.red !== "yes" && getPrioMode() === "manual"){
+          const manual = getManualPriorities();
+          if(manual.length){
+            top3 = manual.concat(top3Auto.filter(t=>!manual.includes(t))).slice(0,3);
+          }
+        }
+
+        // UI: Manual box visibility + Reminder preview
+        renderManualBox(sa.red);
+        buildReminderText(top3);
+
+        if(el.scoreNum) el.scoreNum.textContent = String(total);
+        if(el.ringVal) el.ringVal.textContent = String(total);
+        if(el.ring) {
+          el.ring.style.setProperty("--p", clamp(total,0,100));
+          const ringColor = g.key === "green" ? "var(--good)" : (g.key === "yellow" ? "var(--mid)" : "var(--bad)");
+          el.ring.style.background = `conic-gradient(${ringColor} ${clamp(total,0,100)}%, rgba(255,255,255,.10) 0)`;
+        }
+
+        // lamps
+        [el.lampR, el.lampY, el.lampG].forEach(l=>{ if(l) l.className = l.className.replace(/\bon\b/g,'').trim(); });
+        if(el.lampR) el.lampR.classList.remove("on","red");
+        if(el.lampY) el.lampY.classList.remove("on","yellow");
+        if(el.lampG) el.lampG.classList.remove("on","green");
+        if(g.key === "red" && el.lampR) el.lampR.classList.add("on","red");
+        if(g.key === "yellow" && el.lampY) el.lampY.classList.add("on","yellow");
+        if(g.key === "green" && el.lampG) el.lampG.classList.add("on","green");
+
+        if(el.grade) el.grade.textContent = g.label;
+        if(el.gradeHint) el.gradeHint.textContent = g.text;
+        if(sa.red === "yes"){
+          if(el.grade) el.grade.textContent = "Abklärung";
+          if(el.gradeHint) el.gradeHint.textContent = "Red‑Flag angegeben: bitte medizinische/physiotherapeutische Abklärung priorisieren.";
+        }
+
+        if(el.scoreLabel) el.scoreLabel.textContent = `Einordnung (Dashboard ${diaryTotal}/100 • Baseline ${saBaseVal}/100)`;
+
+        if(el.prio) el.prio.textContent = `${COPY.prioPrefix} ${top3[0] ?? pr.text}`;
+        const pb = $("prioBox");
+        const pl = $("prioList");
+        if(pb && pl){
+          pb.style.display = 'block';
+          pl.innerHTML = top3.map(t=>`<li>${t}</li>`).join("");
+        }
+
+        if(el.sRec) el.sRec.textContent = String(domain.rec);
+        if(el.sRes) el.sRes.textContent = String(domain.res);
+        if(el.sBuf) el.sBuf.textContent = String(domain.buf);
+        if(el.sTis) el.sTis.textContent = String(domain.tis);
+        setBar(el.fRec, domain.rec);
+        setBar(el.fRes, domain.res);
+        setBar(el.fBuf, domain.buf);
+        setBar(el.fTis, domain.tis);
+      }
+
+      function wire(){
+        const listen = (node)=>{ if(node) node.addEventListener('input', updateUI); };
+        const listenChange = (node)=>{ if(node) node.addEventListener('change', updateUI); };
+
+        [el.sleep, el.stress, el.mod, el.int, el.hi, el.speHi, el.hMob, el.hCoo].forEach(listen);
+
+        // Profile + ScoreApp inputs
+        [el.age, el.height, el.weight, el.vo2Actual, el.saLim].forEach(listen);
+        [el.saEnd, el.saStr, el.saMob, el.saCoo, el.saSpe, el.saMot].forEach(listen);
+        [el.sex, el.saRed].forEach(listenChange);
+
+        
+        // Dashboard settings
+        [el.prioModeAuto, el.prioModeManual].forEach(listenChange);
+        [el.prioM1, el.prioM2, el.prioM3].forEach(listen);
+
+        // Reminder configurator
+        if(el.remEnable) el.remEnable.addEventListener('change', updateUI);
+        [el.remFreq, el.remChannel, el.remContent].forEach(listenChange);
+        if(el.remTime) el.remTime.addEventListener('input', updateUI);
+
+        if(el.btnCopyRem){
+          el.btnCopyRem.addEventListener('click', ()=>{
+            if(el.remPreview) copyText(el.remPreview.textContent || "");
+          });
+        }
+
+        // ScoreApp JSON
+        if(el.btnSaJsonApply) el.btnSaJsonApply.addEventListener('click', parseAndApplyScoreAppJson);
+        if(el.btnSaJsonExport) el.btnSaJsonExport.addEventListener('click', ()=>{
+          exportCurrentValuesAsJson();
+        });
+        if(el.btnSaJsonExample) el.btnSaJsonExample.addEventListener('click', insertJsonExample);
+        if(el.btnSaJsonCopy) el.btnSaJsonCopy.addEventListener('click', ()=>{
+          if(el.saJson) copyText(el.saJson.value || "");
+        });
+
+// Demo loader
+        if(el.btnLoadDemo){
+          el.btnLoadDemo.addEventListener('click', ()=>{
+            if(el.sex) el.sex.value = 'male';
+            if(el.age) el.age.value = 37;
+            if(el.height) el.height.value = 172;
+            if(el.weight) el.weight.value = 83;
+            if(el.vo2Actual) el.vo2Actual.value = '';
+
+            if(el.saEnd) el.saEnd.value = 55;
+            if(el.saStr) el.saStr.value = 40;
+            if(el.saMob) el.saMob.value = 60;
+            if(el.saCoo) el.saCoo.value = 45;
+            if(el.saSpe) el.saSpe.value = 35;
+            if(el.saMot) el.saMot.value = 70;
+            if(el.saRed) el.saRed.value = 'no';
+            if(el.saLim) el.saLim.value = 'Knie rechts bei Sprüngen';
+
+            updateUI();
+          });
+        }
+
+        // Placeholder actions (can be wired to Physiotec / Upload later)
+        const info = (msg)=>{ try{ alert(msg); }catch(e){} };
+        if(el.btnVo2Third) el.btnVo2Third.addEventListener('click', ()=>info("Drittanbieter‑Import (z.B. Garmin/Polar/Apple Health) – Schnittstelle im MVP als nächster Schritt."));
+        if(el.btnVo2Physio) el.btnVo2Physio.addEventListener('click', ()=>info("Physiotec‑Annäherungstest – im Portal als Testbatterie hinterlegbar (z.B. Cooper/Step/1,5‑Meilen/6‑min)."));
+        if(el.btnVo2SM) el.btnVo2SM.addEventListener('click', ()=>info("Sportmedizinische Testung – empfohlen bei unklarem/leistungsorientiertem Ziel oder auffälligen Symptomen."));
+
+        [el.sleepQ, el.recPhase].forEach(listenChange);
+        [el.wRec, el.wRes, el.wBuf, el.wTis, el.tRed, el.tYel, el.tGre].forEach(listen);
+
+        function doResetAll(){
+          if(el.sleep) el.sleep.value = 4;
+          if(el.stress) el.stress.value = 0;
+          if(el.sleepQ) el.sleepQ.value = 'poor';
+          if(el.recPhase) el.recPhase.value = 'no';
+          if(el.mod) el.mod.value = 0;
+          if(el.int) el.int.value = 0;
+          if(el.hi) el.hi.value = 0;
+
+          if(el.wRec){ el.wRec.value = 0.35; }
+          if(el.wRes){ el.wRes.value = 0.25; }
+          if(el.wBuf){ el.wBuf.value = 0.20; }
+          if(el.wTis){ el.wTis.value = 0.20; }
+          if(el.tRed){ el.tRed.value = 49; }
+          if(el.tYel){ el.tYel.value = 69; }
+          if(el.tGre){ el.tGre.value = 70; }
+
+          
+
+          // profile + scoreapp reset
+          if(el.sex) el.sex.value = 'male';
+          if(el.age) el.age.value = 35;
+          if(el.height) el.height.value = 170;
+          if(el.weight) el.weight.value = 75;
+          if(el.vo2Actual) el.vo2Actual.value = '';
+          if(el.saEnd) el.saEnd.value = 50;
+          if(el.saStr) el.saStr.value = 50;
+          if(el.saMob) el.saMob.value = 50;
+          if(el.saCoo) el.saCoo.value = 50;
+          if(el.saSpe) el.saSpe.value = 50;
+          if(el.saMot) el.saMot.value = 50;
+          if(el.saRed) el.saRed.value = 'no';
+          if(el.saLim) el.saLim.value = '';
+updateUI();
+        }
+
+        if(el.btnResetTop){
+          el.btnResetTop.addEventListener('click', doResetAll);
+        }
+      }
+
+      // Robust logo loader (tries common filenames, then falls back to text)
+      function wireLogo(){
+        if(!el.brandLogo) return;
+        const candidates = [
+          'baremotion_logo_transparent.png',
+          '8746365b-a869-4017-ab08-875c0014738b.png',
+          'logo_on_white_v2.png',
+          'logo_on_white.png',
+          'baremotion-logo.png'
+        ];
+        let i = 0;
+        const tryNext = ()=>{
+          if(i >= candidates.length){
+            // fallback: show initials in badge
+            el.brandLogo.style.display = 'none';
+            const badge = el.brandLogo.parentElement;
+            if(badge && !badge.querySelector('.logoFallback')){
+              const fb = document.createElement('div');
+              fb.className = 'logoFallback';
+              fb.textContent = 'BM';
+              badge.appendChild(fb);
+            }
+            return;
+          }
+          el.brandLogo.src = candidates[i++];
+        };
+        el.brandLogo.addEventListener('error', tryNext);
+        // first attempt already set in HTML; if it fails, error handler progresses.
+      }
+
+      wireLogo();
+      wire();
+      updateUI();
+      runSelfTests();
+    });
+  </script>
+</body>
+</html>
